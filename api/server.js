@@ -13,7 +13,7 @@ const openapiDocument = {
     info: {
         title: 'Todo Gabarito API',
         version: '1.0.0',
-        description: 'API para listar e atualizar tarefas e hábitos.',
+        description: 'API para listar e atualizar tarefas, hábitos e notas.',
     },
     servers: [{ url: '/' }],
     paths: {
@@ -127,6 +127,92 @@ const openapiDocument = {
                 },
             },
         },
+        '/notes': {
+            get: {
+                summary: 'Lista as notas (mais recentes primeiro)',
+                responses: {
+                    200: {
+                        description: 'Lista de notas',
+                        content: {
+                            'application/json': {
+                                schema: {
+                                    type: 'array',
+                                    items: { $ref: '#/components/schemas/Note' },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            post: {
+                summary: 'Cria uma nota',
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: { $ref: '#/components/schemas/NoteInput' },
+                        },
+                    },
+                },
+                responses: {
+                    201: {
+                        description: 'Nota criada',
+                        content: {
+                            'application/json': {
+                                schema: { $ref: '#/components/schemas/Note' },
+                            },
+                        },
+                    },
+                    400: { description: 'Dados inválidos' },
+                    409: { description: 'Limite de notas atingido' },
+                },
+            },
+        },
+        '/notes/{id}': {
+            put: {
+                summary: 'Atualiza o título e o texto de uma nota',
+                parameters: [{
+                    name: 'id',
+                    in: 'path',
+                    required: true,
+                    schema: { type: 'integer', example: 1 },
+                }],
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: { $ref: '#/components/schemas/NoteInput' },
+                        },
+                    },
+                },
+                responses: {
+                    200: {
+                        description: 'Nota atualizada',
+                        content: {
+                            'application/json': {
+                                schema: { $ref: '#/components/schemas/Note' },
+                            },
+                        },
+                    },
+                    400: { description: 'Dados inválidos' },
+                    404: { description: 'Nota não encontrada' },
+                },
+            },
+            delete: {
+                summary: 'Exclui uma nota',
+                parameters: [{
+                    name: 'id',
+                    in: 'path',
+                    required: true,
+                    schema: { type: 'integer', example: 1 },
+                }],
+                responses: {
+                    204: { description: 'Nota excluída' },
+                    400: { description: 'Dados inválidos' },
+                    404: { description: 'Nota não encontrada' },
+                },
+            },
+        },
     },
     components: {
         schemas: {
@@ -150,6 +236,28 @@ const openapiDocument = {
                         description: 'Datas (AAAA-MM-DD) em ordem crescente',
                         items: { type: 'string', format: 'date', example: '2026-10-27' },
                     },
+                },
+            },
+            Note: {
+                type: 'object',
+                required: ['id', 'title', 'content', 'updatedAt'],
+                properties: {
+                    id: { type: 'integer', example: 1 },
+                    title: { type: 'string', example: 'O que é MVC' },
+                    content: { type: 'string', example: 'Model, View e Controller.' },
+                    updatedAt: {
+                        type: 'string',
+                        format: 'date-time',
+                        example: '2026-10-29T13:45:00.000Z',
+                    },
+                },
+            },
+            NoteInput: {
+                type: 'object',
+                required: ['title'],
+                properties: {
+                    title: { type: 'string', maxLength: 100, example: 'O que é MVC' },
+                    content: { type: 'string', maxLength: 2000, example: 'Model, View e Controller.' },
                 },
             },
             Status: {
@@ -292,6 +400,120 @@ app.post('/habits/:id/checkins', (request, response) => {
 
     habit.checkins.push(date);
     return response.status(201).json(habit);
+});
+
+const hoursAgo = (hours) => new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+
+let notes = [
+    {
+        id: 1,
+        title: 'Camadas do Clean Dart',
+        content: 'Domain, Infra, External e Presenter. O Domain não conhece ninguém.',
+        updatedAt: hoursAgo(1),
+    },
+    {
+        id: 2,
+        title: 'O que é MVC',
+        content: 'O Model guarda os dados e as regras, a View mostra a tela e o Controller liga os dois.',
+        updatedAt: hoursAgo(5),
+    },
+    {
+        id: 3,
+        title: 'Comandos do Flutter',
+        content: 'flutter pub get\nflutter test\nflutter run',
+        updatedAt: hoursAgo(26),
+    },
+    {
+        id: 4,
+        title: 'Verbos HTTP',
+        content: 'GET lê, POST cria, PUT substitui, PATCH altera uma parte e DELETE remove.',
+        updatedAt: hoursAgo(50),
+    },
+    {
+        id: 5,
+        title: 'Ideias para o app',
+        content: 'Modo escuro, busca nas notas e um lembrete diário dos hábitos.',
+        updatedAt: hoursAgo(24 * 4),
+    },
+    {
+        id: 6,
+        title: 'Lista do mercado',
+        content: 'Café, pão, ovos, banana e leite.',
+        updatedAt: hoursAgo(24 * 9),
+    },
+];
+let nextNoteId = notes.length + 1;
+const maxNotes = 300;
+
+// Valida o corpo do POST e do PUT. Devolve { error } ou { title, content }.
+const readNoteInput = (body) => {
+    const { title, content = '' } = body ?? {};
+
+    if (typeof title !== 'string' || !title.trim()) {
+        return { error: 'O campo title é obrigatório.' };
+    }
+    if (typeof content !== 'string') {
+        return { error: 'O campo content deve ser texto.' };
+    }
+    if (title.trim().length > 100 || content.length > 2000) {
+        return { error: 'Use até 100 caracteres no title e 2000 no content.' };
+    }
+    return { title: title.trim(), content };
+};
+
+// Acha a nota do :id ou já responde 400/404. Devolve undefined nesse caso.
+const findNote = (request, response) => {
+    const id = Number(request.params.id);
+
+    if (!Number.isInteger(id)) {
+        response.status(400).json({ error: 'O id deve ser um número inteiro.' });
+        return undefined;
+    }
+
+    const note = notes.find((item) => item.id === id);
+    if (!note) {
+        response.status(404).json({ error: 'Nota não encontrada.' });
+    }
+    return note;
+};
+
+app.get('/notes', (_request, response) => {
+    response.json([...notes].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)));
+});
+
+app.post('/notes', (request, response) => {
+    const input = readNoteInput(request.body);
+    if (input.error) {
+        return response.status(400).json({ error: input.error });
+    }
+    if (notes.length >= maxNotes) {
+        return response.status(409).json({ error: 'Limite de notas atingido.' });
+    }
+
+    const note = { id: nextNoteId++, ...input, updatedAt: new Date().toISOString() };
+    notes.push(note);
+    return response.status(201).json(note);
+});
+
+app.put('/notes/:id', (request, response) => {
+    const note = findNote(request, response);
+    if (!note) return undefined;
+
+    const input = readNoteInput(request.body);
+    if (input.error) {
+        return response.status(400).json({ error: input.error });
+    }
+
+    Object.assign(note, input, { updatedAt: new Date().toISOString() });
+    return response.json(note);
+});
+
+app.delete('/notes/:id', (request, response) => {
+    const note = findNote(request, response);
+    if (!note) return undefined;
+
+    notes = notes.filter((item) => item !== note);
+    return response.status(204).end();
 });
 
 app.use((_request, response) => {

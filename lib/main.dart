@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:todo_gabarito/modules/todos/domain/usecases/update_todos_use_case.dart';
+import 'package:provider/provider.dart';
+import 'package:todo_gabarito/modules/todos/domain/usecases/update_todo_usecase.dart';
 
 import 'modules/auth/model/auth_service.dart';
 import 'modules/auth/view/login_page.dart';

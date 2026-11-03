@@ -1,3 +1,4 @@
+const crypto = require('node:crypto');
 const express = require('express');
 const cors = require('cors');
 const swaggerUi = require('swagger-ui-express');
@@ -13,10 +14,36 @@ const openapiDocument = {
     info: {
         title: 'Todo Gabarito API',
         version: '1.0.0',
-        description: 'API para listar e atualizar tarefas, hábitos e notas.',
+        description: 'API para login e para listar e atualizar tarefas, hábitos e notas.',
     },
     servers: [{ url: '/' }],
     paths: {
+        '/auth/login': {
+            post: {
+                summary: 'Entra com e-mail e senha',
+                description: 'Conta de teste: aluno@todo.dev / 123456',
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: { $ref: '#/components/schemas/LoginInput' },
+                        },
+                    },
+                },
+                responses: {
+                    200: {
+                        description: 'Login feito',
+                        content: {
+                            'application/json': {
+                                schema: { $ref: '#/components/schemas/Session' },
+                            },
+                        },
+                    },
+                    400: { description: 'Dados inválidos' },
+                    401: { description: 'E-mail ou senha incorretos' },
+                },
+            },
+        },
         '/': {
             get: {
                 summary: 'Verifica o status da API',
@@ -216,6 +243,31 @@ const openapiDocument = {
     },
     components: {
         schemas: {
+            LoginInput: {
+                type: 'object',
+                required: ['email', 'password'],
+                properties: {
+                    email: { type: 'string', format: 'email', example: 'aluno@todo.dev' },
+                    password: { type: 'string', example: '123456' },
+                },
+            },
+            User: {
+                type: 'object',
+                required: ['id', 'name', 'email'],
+                properties: {
+                    id: { type: 'integer', example: 1 },
+                    name: { type: 'string', example: 'Aluno' },
+                    email: { type: 'string', format: 'email', example: 'aluno@todo.dev' },
+                },
+            },
+            Session: {
+                type: 'object',
+                required: ['token', 'user'],
+                properties: {
+                    token: { type: 'string', example: '3f1c2a9e-7b4d-4e8a-9c1f-2d6b8a0e5f3c' },
+                    user: { $ref: '#/components/schemas/User' },
+                },
+            },
             Todo: {
                 type: 'object',
                 required: ['id', 'title', 'completed'],
@@ -348,6 +400,33 @@ habits.push(
 
 app.get('/', (_request, response) => {
     response.json({ name: 'todo-gabarito-api', status: 'ok' });
+});
+
+// Usuários de exemplo. Uma API de verdade guardaria só o hash da senha.
+const users = [
+    { id: 1, name: 'Aluno', email: 'aluno@todo.dev', password: '123456' },
+    { id: 2, name: 'Professor', email: 'professor@todo.dev', password: 'senha123' },
+];
+
+app.post('/auth/login', (request, response) => {
+    const { email, password } = request.body ?? {};
+
+    if (typeof email !== 'string' || !email.trim() || typeof password !== 'string' || !password) {
+        return response.status(400).json({ error: 'Informe o e-mail e a senha.' });
+    }
+
+    const user = users.find(
+        (item) => item.email === email.trim().toLowerCase() && item.password === password,
+    );
+    // Mesma resposta para e-mail inexistente e senha errada: não revela quem tem conta.
+    if (!user) {
+        return response.status(401).json({ error: 'E-mail ou senha incorretos.' });
+    }
+
+    return response.json({
+        token: crypto.randomUUID(),
+        user: { id: user.id, name: user.name, email: user.email },
+    });
 });
 
 app.get('/todos', (_request, response) => {

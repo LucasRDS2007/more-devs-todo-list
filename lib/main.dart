@@ -2,6 +2,9 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:todo_gabarito/modules/todos/domain/usecases/update_todos_use_case.dart';
 
+import 'modules/auth/model/auth_service.dart';
+import 'modules/auth/view/login_page.dart';
+import 'modules/auth/viewmodel/login_view_model.dart';
 import 'modules/habits/model/habits_service.dart';
 import 'modules/habits/view/habits_page.dart';
 import 'modules/habits/viewmodel/habits_view_model.dart';
@@ -34,18 +37,27 @@ void main() {
 
   // MVVM: a View observa o ViewModel, que fala com o Model.
   final habitsViewModel = HabitsViewModel(HabitsService(dio))..load();
+  final loginViewModel = LoginViewModel(AuthService(dio));
+
+  final home = HomeShell(
+    pages: [
+      TodosPage(controller: todosController),
+      HabitsPage(viewModel: habitsViewModel),
+      NotesPage(controller: notesController),
+    ],
+  );
 
   runApp(MaterialApp(
     debugShowCheckedModeBanner: false,
     theme: ThemeData(
       colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF315CFF)),
     ),
-    home: HomeShell(
-      pages: [
-        TodosPage(controller: todosController),
-        HabitsPage(viewModel: habitsViewModel),
-        NotesPage(controller: notesController),
-      ],
+    // Enquanto não houver sessão, mostra o login; depois, o app.
+    home: ListenableBuilder(
+      listenable: loginViewModel,
+      builder: (context, _) => loginViewModel.loggedIn
+          ? home
+          : LoginPage(viewModel: loginViewModel),
     ),
   ));
 }

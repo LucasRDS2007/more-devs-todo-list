@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:todo_gabarito/modules/auth/model/storage_service.dart';
 import 'package:todo_gabarito/modules/todos/domain/usecases/update_todos_use_case.dart';
 
 import 'modules/auth/model/auth_service.dart';
@@ -19,7 +20,8 @@ import 'modules/todos/presenter/todos_controller.dart';
 import 'modules/todos/presenter/todos_page.dart';
 
 /// Único lugar que sabe quais implementações usar.
-void main() {
+Future<void> main() async {
+   WidgetsFlutterBinding.ensureInitialized();
   final dio = Dio(
     BaseOptions(baseUrl: 'https://todo-api-production-62d2.up.railway.app'),
   );
@@ -37,11 +39,12 @@ void main() {
 
   // MVVM: a View observa o ViewModel, que fala com o Model.
   final habitsViewModel = HabitsViewModel(HabitsService(dio))..load();
-  final loginViewModel = LoginViewModel(AuthService(dio));
+  final loginViewModel = LoginViewModel(AuthService(dio), storage: StorageService());
+  await loginViewModel.getUserToken();
 
   final home = HomeShell(
     pages: [
-      TodosPage(controller: todosController),
+      TodosPage(controller: todosController, loginController: loginViewModel,),
       HabitsPage(viewModel: habitsViewModel),
       NotesPage(controller: notesController),
     ],
@@ -55,9 +58,16 @@ void main() {
     // Enquanto não houver sessão, mostra o login; depois, o app.
     home: ListenableBuilder(
       listenable: loginViewModel,
-      builder: (context, _) => loginViewModel.loggedIn
-          ? home
-          : LoginPage(viewModel: loginViewModel),
+      builder: (context, child) => 
+      
+         
+         loginViewModel.userToken != null ? 
+           LoginPage(viewModel: loginViewModel) : home, 
+         
+      
+      
+      
+    
     ),
   ));
 }

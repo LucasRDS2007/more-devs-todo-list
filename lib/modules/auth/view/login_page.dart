@@ -1,19 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:todo_gabarito/modules/todos/presenter/todos_page.dart';
 
 import '../viewmodel/login_view_model.dart';
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends StatefulWidget {
   const LoginPage({super.key, required this.viewModel});
 
   final LoginViewModel viewModel;
 
   @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+
+  @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: viewModel,
+      listenable: widget.viewModel,
       builder: (context, _) {
         final colorScheme = Theme.of(context).colorScheme;
-        final error = viewModel.error;
+        final error = widget.viewModel.error;
         return Scaffold(
           backgroundColor: const Color(0xFFF6F7FB),
           body: SafeArea(
@@ -61,8 +68,8 @@ class LoginPage extends StatelessWidget {
                         ),
                         const SizedBox(height: 28),
                         TextField(
-                          onChanged: viewModel.setEmail,
-                          enabled: !viewModel.loading,
+                          onChanged: widget.viewModel.setEmail,
+                          enabled: !widget.viewModel.loading,
                           keyboardType: TextInputType.emailAddress,
                           textInputAction: TextInputAction.next,
                           autocorrect: false,
@@ -70,27 +77,27 @@ class LoginPage extends StatelessWidget {
                           decoration: _decoration(
                             label: 'E-mail',
                             icon: Icons.mail_outline_rounded,
-                            errorText: viewModel.emailError,
+                            errorText: widget.viewModel.emailError,
                           ),
                         ),
                         const SizedBox(height: 14),
                         TextField(
-                          onChanged: viewModel.setPassword,
-                          onSubmitted: (_) => viewModel.login(),
-                          enabled: !viewModel.loading,
-                          obscureText: viewModel.obscurePassword,
+                          onChanged: widget.viewModel.setPassword,
+                          onSubmitted: (_) => widget.viewModel.login(),
+                          enabled: !widget.viewModel.loading,
+                          obscureText: widget.viewModel.obscurePassword,
                           textInputAction: TextInputAction.done,
                           autofillHints: const [AutofillHints.password],
                           decoration: _decoration(
                             label: 'Senha',
                             icon: Icons.lock_outline_rounded,
                             suffix: IconButton(
-                              tooltip: viewModel.obscurePassword
+                              tooltip: widget.viewModel.obscurePassword
                                   ? 'Mostrar senha'
                                   : 'Esconder senha',
-                              onPressed: viewModel.togglePasswordVisibility,
+                              onPressed: widget.viewModel.togglePasswordVisibility,
                               icon: Icon(
-                                viewModel.obscurePassword
+                                widget.viewModel.obscurePassword
                                     ? Icons.visibility_outlined
                                     : Icons.visibility_off_outlined,
                               ),
@@ -99,10 +106,10 @@ class LoginPage extends StatelessWidget {
                         ),
                         const SizedBox(height: 6),
                         CheckboxListTile(
-                          value: viewModel.rememberMe,
-                          onChanged: viewModel.loading
+                          value: widget.viewModel.rememberMe,
+                          onChanged: widget.viewModel.loading
                               ? null
-                              : (_) => viewModel.toggleRememberMe(),
+                              : (_) => widget.viewModel.toggleRememberMe(),
                           title: const Text('Lembrar de mim'),
                           controlAffinity: ListTileControlAffinity.leading,
                           contentPadding: EdgeInsets.zero,
@@ -120,7 +127,7 @@ class LoginPage extends StatelessWidget {
                           height: 52,
                           child: FilledButton(
                             onPressed:
-                                viewModel.canSubmit ? viewModel.login : null,
+                                widget.viewModel.canSubmit ? widget.viewModel.login : null,
                             style: FilledButton.styleFrom(
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
@@ -130,7 +137,7 @@ class LoginPage extends StatelessWidget {
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
-                            child: viewModel.loading
+                            child: widget.viewModel.loading
                                 ? const SizedBox.square(
                                     dimension: 22,
                                     child: CircularProgressIndicator(

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:todo_gabarito/modules/auth/model/storage_service.dart';
 
 import '../model/auth_service.dart';
 import '../model/session.dart';
@@ -6,7 +7,9 @@ import '../model/session.dart';
 final _emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
 class LoginViewModel extends ChangeNotifier {
-  LoginViewModel(this.service);
+  LoginViewModel(this.service, {required this.storage});
+  final StorageService storage;
+  String? userToken;
 
   final AuthService service;
 
@@ -43,6 +46,7 @@ class LoginViewModel extends ChangeNotifier {
   void togglePasswordVisibility() {
     obscurePassword = !obscurePassword;
     notifyListeners();
+    
   }
 
   void toggleRememberMe() {
@@ -70,7 +74,18 @@ class LoginViewModel extends ChangeNotifier {
     } catch (_) {
       error = 'Não foi possível entrar. Tente de novo.';
     }
+    if(rememberMe){
+      storage.setToken(session!.token);
+    }
     loading = false;
     notifyListeners();
+  }
+
+
+  Future getUserToken() async{
+    userToken = await storage.getToken();
+  }
+  Future deleteUserToken() async{
+    storage.deleteToken();
   }
 }

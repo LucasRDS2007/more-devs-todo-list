@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:todo_gabarito/modules/auth/view/login_page.dart';
+import 'package:todo_gabarito/modules/auth/viewmodel/login_view_model.dart';
 
 import 'todos_controller.dart';
 import 'todo_update_page.dart';
 
 /// A página só lê o estado do controller e repassa eventos.
 class TodosPage extends StatefulWidget {
-  const TodosPage({super.key, required this.controller});
+  const TodosPage({super.key, required this.controller, required this.loginController});
 
   final TodosController controller;
+  final LoginViewModel loginController;
 
   @override
   State<TodosPage> createState() => _TodosPageState();
@@ -50,6 +53,7 @@ class _TodosPageState extends State<TodosPage> {
   }
 
   Widget _buildBody(BuildContext context) {
+
     final controller = widget.controller;
     if (controller.loading) {
       return const Center(child: CircularProgressIndicator());
@@ -84,39 +88,52 @@ class _TodosPageState extends State<TodosPage> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _todayLabel(),
-                    style: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
+        Builder(
+          builder: (context) {
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _todayLabel(),
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Minhas tarefas',
+                        style: TextStyle(
+                          fontSize: 29,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.8,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Minhas tarefas',
-                    style: TextStyle(
-                      fontSize: 29,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -0.8,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            IconButton.filledTonal(
-              tooltip: 'Atualizar tarefas',
-              onPressed: controller.loading ? null : controller.load,
-              icon: const Icon(Icons.refresh_rounded),
-            ),
-          ],
+                ),
+                IconButton.filledTonal(onPressed: (){
+                widget.loginController.deleteUserToken();
+                Navigator.push(
+  context,
+  MaterialPageRoute(
+    builder: (context) => LoginPage(viewModel: widget.loginController,),
+  ),
+);
+                }, icon: Icon(Icons.logout)),
+                IconButton.filledTonal(
+                  tooltip: 'Atualizar tarefas',
+                  onPressed: controller.loading ? null : controller.load,
+                  icon: const Icon(Icons.refresh_rounded),
+                ),
+              ],
+            );
+          }
         ),
         const SizedBox(height: 26),
         _SummaryHeader(total: controller.todos.length, completed: completed),
